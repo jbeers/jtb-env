@@ -1,0 +1,8 @@
+[user]
+	email = jacobtbeers@gmail.com
+	name = Jacob Beers
+
+# git quicksave
+# Save all changes (including untracked files) to a new stash with a timestamped message
+[alias]
+	quicksave = !git stash push -u -m \"stash-$(date +%Y-%m-%d_%H-%M-%S)\"
