@@ -79,24 +79,12 @@ myvar=$(echo '{
 tempfile=$(mktemp /tmp/git_log_summary.XXXXXX)
 echo "$myvar" > $tempfile
 
-# Start loader in background
-loader() {
-  while true; do
-    printf "."
-    sleep 1
-  done
-}
 
 # Pipe git_log into the chosen command
 if [ -z "$process_cmd" ] || [ "$process_cmd" = "local" ]; then
-  (loader &)
-LOADER_PID=$!
   curl -s http://localhost:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d @"$tempfile" | jq -r '.choices[0].message.content'
-  kill $LOADER_PID &>/dev/null
-  wait $LOADER_PID 2>/dev/null
-  echo ""
 else
   echo "$git_log" | eval "$process_cmd"
 fi
