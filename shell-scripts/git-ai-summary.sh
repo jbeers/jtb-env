@@ -10,9 +10,24 @@ fi
 # Change to the git root directory
 cd "$git_root"
 
+# ...existing code...
+
+# Parse --ref argument
+ref="HEAD..@{u}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --ref)
+      ref="$2"
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 # Get the log of incoming changes (those that would be pulled in)
-# git_log=$(git --no-pager log HEAD..@{u} --pretty=format:"%C(yellow)%h %C(cyan)%ad %C(green)%an%C(reset)%n    %s%n%n" --date=short)
-git_log=$(git --no-pager log -n 1 --pretty=format:"%C(yellow)%h %C(cyan)%ad %C(green)%an%C(reset)%n    %s%n%n" --date=short)
+git_log=$(git --no-pager log "$ref" --pretty=format:"%C(yellow)%h %C(cyan)%ad %C(green)%an%C(reset)%n    %s%n%n" --date=short)
 
 # The log is now in $git_log for further processing
 
