@@ -10,14 +10,22 @@ fi
 # Change to the git root directory
 cd "$git_root"
 
-# ...existing code...
-
 # Parse --ref argument
-ref="HEAD..@{u}"
+ref="HEAD"
+log_limit="-n 5"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ref)
       ref="$2"
+      # If ref is "available", set log_limit to "" and ref to HEAD..@{u}
+      if [[ "$ref" == "available" ]]; then
+        log_limit=""
+        ref="HEAD..@{u}"
+      # If ref is an integer, treat it as a limit for -n
+      elif [[ "$ref" =~ ^[0-9]+$ ]]; then
+        log_limit="-n $ref"
+        ref="HEAD"
+      fi
       shift 2
       ;;
     *)
@@ -27,7 +35,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Get the log of incoming changes (those that would be pulled in)
-git_log=$(git --no-pager log "$ref" --pretty=format:"%C(yellow)%h %C(cyan)%ad %C(green)%an%C(reset)%n    %s%n%n" --date=short)
+git_log=$(git --no-pager log $log_limit "$ref" --pretty=format:"%C(yellow)%h %C(cyan)%ad %C(green)%an%C(reset)%n    %s%n%n" --date=short)
 
 # The log is now in $git_log for further processing
 
@@ -71,11 +79,23 @@ myvar=$(echo '{
 tempfile=$(mktemp /tmp/git_log_summary.XXXXXX)
 echo "$myvar" > $tempfile
 
+# Start loader in background
+loader() {
+  while true; do
+    printf "."
+    sleep 1
+  done
+}
+
 # Pipe git_log into the chosen command
 if [ -z "$process_cmd" ] || [ "$process_cmd" = "local" ]; then
-  curl http://localhost:1234/v1/chat/completions \
+  loader &
+  LOADER_PID=$!
+  curl -s http://localhost:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d @"$tempfile" | jq -r '.choices[0].message.content'
+  kill $LOADER_PID &>/dev/null
+  echo ""
 else
   echo "$git_log" | eval "$process_cmd"
 fi
